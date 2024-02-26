@@ -11,6 +11,24 @@ yum install docker -y
 systemctl start docker
 """
 
+    def generate_config_github(self):
+        return """
+git config --global user.name notebook
+git config --global user.email notebook@email.com
+
+cat > ~/.ssh/id_ed25519 << EOF
+{ssh_private_key}
+EOF
+
+cat > ~/.ssh/config << EOF
+Host *
+    StrictHostKeyChecking no
+EOF
+
+chmod 400 ~/.ssh/id_ed25519
+chmod 400 ~/.ssh/config
+        """.format(ssh_private_key=os.environ.get("SSH_PRIVATE_KEY"))
+
     def generate_install_proxy_command(self):
         return """
 sudo docker run -e PASSWORD="passIt2020" \
@@ -37,19 +55,5 @@ docker run -itd --rm -p 10000:8888 \
     start-notebook.py --ServerApp.token=abcd
 
 docker exec -u jovyan notebook bash -c "mkdir ~/.ssh
-
-git config --global user.name "notebook"
-git config --global user.email "notebook@email.com"
-
-cat > ~/.ssh/id_ed25519 << EOF
-{ssh_private_key}
-EOF
-
-cat > ~/.ssh/config << EOF
-Host *
-    StrictHostKeyChecking no
-EOF
-
-chmod 400 ~/.ssh/id_ed25519
-chmod 400 ~/.ssh/config"
-""".format(name=name, ssh_private_key=os.environ.get("SSH_PRIVATE_KEY"))
+{config_github_cmd}"
+""".format(name=name, config_github_cmd=self.generate_config_github())
