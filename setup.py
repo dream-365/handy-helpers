@@ -9,7 +9,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'requests>=2.25.1',
-        'numpy>=1.21.2',
+        'numpy>=1.19.5',
         'aliyun-python-sdk-core>=2.13.18',
         'aliyun-python-sdk-ecs>=4.23.0',
     ],
