@@ -1,20 +1,14 @@
 import os
 import logging
 import json
-import time
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.auth.credentials import AccessKeyCredential
-from aliyunsdkcore.acs_exception.exceptions import ClientException
-from aliyunsdkcore.acs_exception.exceptions import ServerException
 from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesRequest
 from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
 from aliyunsdkecs.request.v20140526.DescribeVSwitchesRequest import DescribeVSwitchesRequest
 from aliyunsdkecs.request.v20140526.DescribeSecurityGroupsRequest import DescribeSecurityGroupsRequest
 from aliyunsdkecs.request.v20140526.RunCommandRequest import RunCommandRequest
 from aliyunsdkecs.request.v20140526.DeleteInstancesRequest import DeleteInstancesRequest
-from aliyunsdkecs.request.v20140526.DescribeInstanceAttributeRequest import DescribeInstanceAttributeRequest
-from aliyunsdkecs.request.v20140526.InvokeCommandRequest import InvokeCommandRequest
-from aliyunsdkalidns.request.v20150109.UpdateDomainRecordRequest import UpdateDomainRecordRequest
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(name)s [%(levelname)s]: %(message)s",
@@ -232,7 +226,7 @@ class AliyunECSManager:
         settings.set_vswitch_id(default_vswitch_id)
         settings.set_host_name('sg-001')
         settings.set_image_id("aliyun_3_x64_20G_qboot_alibase_20230727.vhd")
-        settings.set_password("Aliyun$2022!")
+        settings.set_password(os.environ.get("VM_PASS"))
         settings.set_instance_type("ecs.g6.large")
         settings.set_system_disk_size(80)
         settings.set_system_disk_category("cloud_essd")
@@ -240,58 +234,3 @@ class AliyunECSManager:
         settings.set_spot_strategy("NoSpot")
         
         return settings
-
-
-class CommandGenerator:
-    def __init__(self):
-      pass
-
-    def generate_install_docker_command(self):
-        return """
-yum install epel-release -y
-yum install docker -y
-systemctl start docker
-"""
-
-    def generate_install_proxy_command(self):
-        return """
-sudo docker run -e PASSWORD="passIt2020" \
--e METHOD="aes-256-cfb" \
--p8000:8388 -p8000:8388/udp \
--d shadowsocks/shadowsocks-libev
-        """
-
-    def generate_install_git_command(self):
-        return "yum install git -y"
-
-    def generate_start_jupyter_command(self, name="base-notebook"):
-        return """
-mkdir -p /root/work
-cd /root/work
-
-docker run -itd --rm -p 10000:8888 \
-    --name notebook \
-    -v "${{PWD}}":/home/jovyan/work \
-    --user root \
-    -e CHOWN_EXTRA="/home/jovyan/work" \
-    -e CHOWN_EXTRA_OPTS="-R" \
-    quay.io/jupyter/{name} \
-    start-notebook.py --ServerApp.token=abcd
-
-docker exec -u jovyan notebook bash -c "mkdir ~/.ssh
-
-git config --global user.name "notebook"
-git config --global user.email "notebook@email.com"
-
-cat > ~/.ssh/id_ed25519 << EOF
-{ssh_private_key}
-EOF
-
-cat > ~/.ssh/config << EOF
-Host *
-    StrictHostKeyChecking no
-EOF
-
-chmod 400 ~/.ssh/id_ed25519
-chmod 400 ~/.ssh/config"
-""".format(name=name, ssh_private_key=os.environ.get("SSH_PRIVATE_KEY"))
