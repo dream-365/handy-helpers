@@ -144,7 +144,7 @@ class AliyunECSManager:
 
         return VMProperty(instance_id=instance_id)
 
-    def _run_command(self, instance_id, cmd_content):
+    def _run_command(self, instance_id, cmd_content, timeout):
         try:
             client = self._get_client()
             request = RunCommandRequest()
@@ -153,7 +153,7 @@ class AliyunECSManager:
             request.set_CommandContent(cmd_content)
             request.set_InstanceIds([instance_id])
             request.set_Username("root")
-            request.set_Timeout(600)
+            request.set_Timeout(timeout)
 
             response = client.do_action_with_exception(request)
             invoke_id = json.loads(response).get("InvokeId")
@@ -184,9 +184,11 @@ class AliyunECSManager:
         
         return None
 
-    def execute_command(self, instance_id, cmd_content):
-        return self._run_command(instance_id, cmd_content)
-
+    def execute_command(self, instance_id, cmd_content, timeout=600):
+        return self._run_command(instance_id, cmd_content, timeout)
+    
+    def wait_for_command(cmd_id):
+        pass
 
     def clean(self, biz_tags):
         vm_properties = self.get_instances(biz_tags)
