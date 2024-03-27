@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import base64
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.auth.credentials import AccessKeyCredential
 from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesRequest
@@ -9,6 +10,7 @@ from aliyunsdkecs.request.v20140526.DescribeVSwitchesRequest import DescribeVSwi
 from aliyunsdkecs.request.v20140526.DescribeSecurityGroupsRequest import DescribeSecurityGroupsRequest
 from aliyunsdkecs.request.v20140526.RunCommandRequest import RunCommandRequest
 from aliyunsdkecs.request.v20140526.DeleteInstancesRequest import DeleteInstancesRequest
+from aliyunsdkecs.request.v20140526.DescribeInvocationResultsRequest import DescribeInvocationResultsRequest
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(name)s [%(levelname)s]: %(message)s",
@@ -187,8 +189,21 @@ class AliyunECSManager:
     def execute_command(self, instance_id, cmd_content, timeout=600):
         return self._run_command(instance_id, cmd_content, timeout)
     
-    def wait_for_command(cmd_id):
+    def wait_for_invocation(invoke_id):
         pass
+    
+    def query_invocation_result(self, invoke_id):
+        client = self._get_client()
+        request = DescribeInvocationResultsRequest()
+        request.set_accept_format('json')
+        request.set_InvokeId(invoke_id)
+        json_response = do_action_return_json(client, request)
+        base64_output = json_response['Invocation']['InvocationResults']['InvocationResult'][0]['Output']
+        
+        decoded_bytes = base64.b64decode(base64_output)
+        decoded_str = decoded_bytes.decode('utf-8')
+        return decoded_str
+
 
     def clean(self, biz_tags):
         vm_properties = self.get_instances(biz_tags)
