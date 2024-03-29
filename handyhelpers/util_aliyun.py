@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import base64
+import time
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.auth.credentials import AccessKeyCredential
 from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesRequest
@@ -48,6 +49,12 @@ class VMProperty:
 
     def set_public_ip(self, public_ip):
         self.public_ip = public_ip
+
+class CommandInvocationResult:
+    def __init__(self, invocation_status, invoke_record_status, output):
+        self.invocation_status = invocation_status
+        self.invoke_record_status = invoke_record_status
+        self.output = output
 
 def do_action_return_json(client, request):
     response = client.do_action_with_exception(request)
@@ -189,20 +196,28 @@ class AliyunECSManager:
     def execute_command(self, instance_id, cmd_content, timeout=600):
         return self._run_command(instance_id, cmd_content, timeout)
     
-    def wait_for_invocation(invoke_id):
-        pass
-    
-    def query_invocation_result(self, invoke_id):
+    def wait_invocation_result(self, invoke_id):
         client = self._get_client()
         request = DescribeInvocationResultsRequest()
         request.set_accept_format('json')
         request.set_InvokeId(invoke_id)
-        json_response = do_action_return_json(client, request)
-        base64_output = json_response['Invocation']['InvocationResults']['InvocationResult'][0]['Output']
-        
-        decoded_bytes = base64.b64decode(base64_output)
-        decoded_str = decoded_bytes.decode('utf-8')
-        return decoded_str
+        invoke_record_status = ''
+        invocation_status = ''
+        invocation_output = ''
+
+        while invoke_record_status != "Finished":
+            time.sleep(3)
+            json_response = do_action_return_json(client, request)
+            invocation_result = json_response['Invocation']['InvocationResults']['InvocationResult'][0]
+            base64_output = invocation_result['Output']
+            invocation_status = invocation_result['InvocationStatus']
+            invoke_record_status = invocation_result['InvokeRecordStatus']
+            decoded_bytes = base64.b64decode(base64_output)
+            invocation_output = decoded_bytes.decode('utf-8')
+
+        return CommandInvocationResult(invocation_status=invocation_status, 
+                                       invoke_record_status=invoke_record_status, 
+                                       output=invocation_output)
 
 
     def clean(self, biz_tags):
