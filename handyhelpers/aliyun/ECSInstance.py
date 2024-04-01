@@ -1,5 +1,6 @@
-import json
-from .CommandHelper import CommandHelper
+from .RunCommandHelper import RunCommandHelper
+from .ClientProvider import ClientProvider
+from aliyunsdkecs.request.v20140526.DeleteInstancesRequest import DeleteInstancesRequest
 
 class ECSInstance:
     def __init__(self):
@@ -38,9 +39,8 @@ class ECSInstance:
         self.credit_specification = ""
 
     @staticmethod
-    def from_json(json_data):
+    def from_json(data):
         instance = ECSInstance() 
-        data = json.loads(json_data)
         instance.description = data.get("Description", "")
         instance.memory = data.get("Memory", 0)
         instance.instance_charge_type = data.get("InstanceChargeType", "")
@@ -77,10 +77,19 @@ class ECSInstance:
         return instance
 
     def syncRun(self, cmd_content, timeout=600):
-        return CommandHelper(self.region_id).syncRun(self.instance_id, cmd_content, timeout=timeout)
+        return RunCommandHelper(self.region_id).syncRun(self.instance_id, cmd_content, timeout=timeout)
     
     def asyncRun(self, cmd_content, timeout=600):
-        return CommandHelper(self.region_id).asyncRun(self.instance_id, cmd_content, timeout=timeout)
-    
+        return RunCommandHelper(self.region_id).asyncRun(self.instance_id, cmd_content, timeout=timeout)
+
     def attachNewDisk(self):
         pass
+
+    def release(self):
+        client = ClientProvider.getClient(self.region_id)
+        delete_instance_request = DeleteInstancesRequest()
+        delete_instance_request.set_accept_format('json')
+        delete_instance_request.set_InstanceIds([self.instance_id])
+        delete_instance_request.set_Force(True)
+
+        client.do_action_with_exception(delete_instance_request)

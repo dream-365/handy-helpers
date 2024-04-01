@@ -12,6 +12,7 @@ from aliyunsdkecs.request.v20140526.DescribeSecurityGroupsRequest import Describ
 from aliyunsdkecs.request.v20140526.RunCommandRequest import RunCommandRequest
 from aliyunsdkecs.request.v20140526.DeleteInstancesRequest import DeleteInstancesRequest
 from aliyunsdkecs.request.v20140526.DescribeInvocationResultsRequest import DescribeInvocationResultsRequest
+from aliyunsdkecs.request.v20140526.DescribeInstanceAttributeRequest import DescribeInstanceAttributeRequest
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(name)s [%(levelname)s]: %(message)s",
@@ -36,10 +37,11 @@ class Bootstrap:
         self.set_environment_variables()
 
 class VMProperty:
-    def __init__(self, instance_id=None, hostname=None, public_ip=None):
+    def __init__(self, instance_id=None, hostname=None, public_ip=None, zone=None):
         self.instance_id = instance_id
         self.hostname = hostname
         self.public_ip = public_ip
+        self.zone = zone
 
     def set_instance_id(self, instance_id):
         self.instance_id = instance_id
@@ -151,7 +153,9 @@ class AliyunECSManager:
         run_instances_response_json = json.loads(str(run_instances_response, encoding='utf-8'))
         instance_id = run_instances_response_json['InstanceIdSets']['InstanceIdSet'][0]
 
-        return VMProperty(instance_id=instance_id)
+        time.sleep(10) # wait for public ip addr assignment
+
+        return self.describeInstanceAttribute(instance_id=instance_id)
 
     def _run_command(self, instance_id, cmd_content, timeout):
         try:
@@ -219,7 +223,6 @@ class AliyunECSManager:
                                        invoke_record_status=invoke_record_status, 
                                        output=invocation_output)
 
-
     def clean(self, biz_tags):
         vm_properties = self.get_instances(biz_tags)
 
@@ -245,6 +248,17 @@ class AliyunECSManager:
         
         return list(map(lambda x: VMProperty(instance_id=x['InstanceId'], 
                                              public_ip=x['PublicIpAddress']['IpAddress'][0]), instances))
+    
+    def describeInstanceAttribute(self, instance_id):
+        client = self._get_client()
+        request = DescribeInstanceAttributeRequest()
+        request.set_accept_format('json')
+        request.set_InstanceId(instance_id)
+        data = do_action_return_json(client, request)
+        public_ip_address = data.get("PublicIpAddress", {}).get("IpAddress", [])[0]
+        host_name = data.get("HostName", "")
+
+        return VMProperty(instance_id=instance_id, hostname=host_name, public_ip=public_ip_address)
 
     def create_instance(self, settings):
         return self._run_instance(settings)
