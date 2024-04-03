@@ -82,6 +82,8 @@ class ECSManager:
 
         return self.describeInstanceAttribute(instance_id=instance_id)
     
+    def getOrCreateInstance(self, settings:RunECSInstanceSettings):
+        pass
 
     def runInstance(self, settings:RunECSInstanceSettings):
         defualt_settings = self._createDefaultRunECSInstanceSettings()
