@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='handy-helpers',
-    version='1.0.3',
+    version='1.0.4',
     description='A simple helpers module',
     author='Jeffrey Chen',
     author_email='jackafx@gmail.com',
