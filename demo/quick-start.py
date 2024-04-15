@@ -11,4 +11,15 @@ instance = ecs_manager.runInstance(RunECSInstanceSettings(
     # image_id="aliyun_3_9_x64_20G_uefi_alibase_20231219.vhd"
     ))
 
+# run command
 instance.syncRun(docker_scripts.install_docker)
+
+pipeline = [
+    {"name": "task1", "scripts": "script..."},
+    {"name": "task2", "scripts": "script..."},
+]
+
+result = instance.runPipeline(pipeline)
+
+
+result.getOutput("task name")

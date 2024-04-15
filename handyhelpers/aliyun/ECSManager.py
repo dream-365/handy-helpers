@@ -8,6 +8,7 @@ from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesReque
 from aliyunsdkecs.request.v20140526.DescribeInstanceAttributeRequest import DescribeInstanceAttributeRequest
 from aliyunsdkecs.request.v20140526.DescribeVSwitchesRequest import DescribeVSwitchesRequest
 from aliyunsdkecs.request.v20140526.DescribeSecurityGroupsRequest import DescribeSecurityGroupsRequest
+from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
 
 class ECSManager:
     def __init__(self, region_id):
@@ -81,9 +82,55 @@ class ECSManager:
         time.sleep(10) # wait for public ip addr assignment
 
         return self.describeInstanceAttribute(instance_id=instance_id)
+
+
+    def _describeInstances(self):
+        """
+        Makes the request to describe instances and handles exceptions.
+
+        Args:
+
+        Returns:
+            dict: The data returned from the describe instances request
+        """
+        request = DescribeInstancesRequest()
+        request.set_accept_format('json')
+        client = ClientProvider.getClient(self.region_id)
+
+        try:
+            response = client.do_action_with_exception(request)
+            return json.loads(str(response, encoding='utf-8'))
+        except Exception as e:
+            print("An error occurred while describing instances:", e)
+            return None
     
-    def getOrCreateInstance(self, settings:RunECSInstanceSettings):
-        pass
+
+    def _parseInstanceData(self, response):
+        """
+        Parses the response data to create ECSInstance objects.
+
+        Args:
+            response (dict): The response data from the describe instances request
+
+        Returns:
+            list: A list of ECSInstance objects.
+        """
+        if not response:
+            return []
+        
+        instance_data_list = response.get("Instances", {}).get("Instance", [])
+        return [ECSInstance.from_json(data) for data in instance_data_list]
+
+    def listInstances(self):
+        """
+        Retrieves a list of ECS instances for the specified region.
+
+        Returns:
+            list: A list of ECSInstance objects.
+        """
+        response = self._describeInstances()
+        return self._parseInstanceData(response)
+
 
     def runInstance(self, settings:RunECSInstanceSettings):
         defualt_settings = self._createDefaultRunECSInstanceSettings()
