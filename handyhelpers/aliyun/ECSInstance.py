@@ -76,11 +76,19 @@ class ECSInstance:
         instance.credit_specification = data.get("CreditSpecification", "")
         return instance
 
-    def syncRun(self, cmd_content, timeout=600):
-        return RunCommandHelper(self.region_id).syncRun(self.instance_id, cmd_content, timeout=timeout)
+    def syncRun(self, cmd_content, name=None, timeout=600):
+        return RunCommandHelper(self.region_id).syncRun(
+            instance_id=self.instance_id, 
+            cmd_content=cmd_content, 
+            name=name, 
+            timeout=timeout)
     
-    def asyncRun(self, cmd_content, timeout=600):
-        return RunCommandHelper(self.region_id).asyncRun(self.instance_id, cmd_content, timeout=timeout)
+    def asyncRun(self, cmd_content, name=None,timeout=600):
+        return RunCommandHelper(self.region_id).asyncRun(
+            instance_id=self.instance_id, 
+            cmd_content=cmd_content, 
+            name=name, 
+            timeout=timeout)
 
     def attachNewDisk(self):
         pass

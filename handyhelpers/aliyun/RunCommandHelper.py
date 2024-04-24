@@ -5,6 +5,8 @@ from aliyunsdkecs.request.v20140526.RunCommandRequest import RunCommandRequest
 from aliyunsdkecs.request.v20140526.DescribeInvocationResultsRequest import DescribeInvocationResultsRequest
 from .ClientProvider import ClientProvider
 
+SECONDS_INTERVAL = 3
+
 class CommandInvocationResult:
     """Represents the result of a command invocation."""
     def __init__(self, invocation_status, invoke_record_status, output):
@@ -26,7 +28,7 @@ class RunCommandHelper:
         response = self._perform_request(client, request)
         return self._parse_invocation_result(response)
 
-    def asyncRun(self, instance_id, cmd_content, timeout):
+    def asyncRun(self, instance_id, cmd_content, timeout, name=None):
         client = ClientProvider.getClient(self.region_id)
         request = RunCommandRequest()
         request.set_accept_format('json')
@@ -35,16 +37,23 @@ class RunCommandHelper:
         request.set_InstanceIds([instance_id])
         request.set_Username("root")
         request.set_Timeout(timeout)
+
+        if name is not None:
+            request.set_Name(name)
+
         response = self._perform_request(client, request)
         return json.loads(response).get("InvokeId")
 
-    def syncRun(self, instance_id, cmd_content, timeout):
-        invoke_id = self.asyncRun(instance_id, cmd_content, timeout)
+    def syncRun(self, instance_id, cmd_content, timeout, name=None):
+        invoke_id = self.asyncRun(instance_id=instance_id, 
+                                  name=name, 
+                                  cmd_content=cmd_content, 
+                                  timeout=timeout)
         while True:
             result = self.getInvocationResult(invoke_id)
             if result.invoke_record_status == "Finished":
                 break
-            time.sleep(3)
+            time.sleep(SECONDS_INTERVAL)
         return result
 
     def _perform_request(self, client, request):

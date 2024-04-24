@@ -81,7 +81,7 @@ class ECSManager:
 
         time.sleep(10) # wait for public ip addr assignment
 
-        return self.describeInstanceAttribute(instance_id=instance_id)
+        return self.loadInstance(instance_id=instance_id)
 
 
     def _describeInstances(self):
@@ -137,7 +137,7 @@ class ECSManager:
         settings.merge_from(defualt_settings)
         return self.__runInstance(settings)
     
-    def describeInstanceAttribute(self, instance_id):
+    def loadInstance(self, instance_id):
         client = ClientProvider.getClient(self.region_id)
         request = DescribeInstanceAttributeRequest()
         request.set_accept_format('json')
