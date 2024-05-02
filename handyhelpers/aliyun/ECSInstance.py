@@ -1,6 +1,10 @@
 from .RunCommandHelper import RunCommandHelper
 from .ClientProvider import ClientProvider
+from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
 from aliyunsdkecs.request.v20140526.DeleteInstancesRequest import DeleteInstancesRequest
+from aliyunsdkecs.request.v20140526.CreateDiskRequest import CreateDiskRequest
+from aliyunsdkecs.request.v20140526.AttachDiskRequest import AttachDiskRequest
+import json
 
 class ECSInstance:
     def __init__(self):
@@ -92,8 +96,40 @@ class ECSInstance:
             tags=tags,
             timeout=timeout)
 
-    def attachNewDisk(self):
-        pass
+    def attachNewDisk(self, disk_size, disk_category, performance_level=None, delete_with_instance=True):
+        client = ClientProvider.getClient(self.region_id)
+        # 创建一块新的云盘
+        create_disk_request = CreateDiskRequest()
+        create_disk_request.set_ZoneId(self.zone_id)  # 设置创建云盘的区域ID和可用区ID
+        create_disk_request.set_Size(disk_size)  # 设置云盘大小，单位为GiB
+        create_disk_request.set_DiskCategory(disk_category)  # 设置云盘类型，可选cloud | cloud_efficiency | cloud_ssd | cloud_essd | etc.
+
+        if performance_level is not None:
+            create_disk_request.set_PerformanceLevel(performance_level)
+
+        # 发送请求并处理响应或异常
+        try:
+            create_disk_response = client.do_action_with_exception(create_disk_request)
+            create_disk_response_decoded = json.loads(create_disk_response)
+            # 解析云盘ID，用于后续挂载操作
+            disk_id = create_disk_response_decoded['DiskId']
+        except ServerException as e:
+            print("Create Disk Failed:", e)
+        except ClientException as e:
+            print("Create Disk Failed:", e)
+
+        # 将创建的云盘附加到ECS实例上
+        attach_disk_request = AttachDiskRequest()
+        attach_disk_request.set_InstanceId(self.instance_id)
+        attach_disk_request.set_DiskId(disk_id)  # 使用之前创建云盘的云盘ID
+        attach_disk_request.set_DeleteWithInstance(delete_with_instance)
+        # 发送请求并处理响应或异常
+        try:
+            client.do_action_with_exception(attach_disk_request)
+        except ServerException as e:
+            print("Attach Disk Failed:", e)
+        except ClientException as e:
+            print("Attach Disk Failed:", e)
     
     def release(self):
         client = ClientProvider.getClient(self.region_id)
