@@ -2,6 +2,7 @@ import base64
 import json
 import time
 import math
+import logging
 from aliyunsdkecs.request.v20140526.RunCommandRequest import RunCommandRequest
 from aliyunsdkecs.request.v20140526.DescribeInvocationResultsRequest import DescribeInvocationResultsRequest
 from .ClientProvider import ClientProvider
@@ -40,18 +41,10 @@ class RunCommandHelper:
         self.region_id = region_id
 
     def getInvocationResult(self, invocation_id):
-        client = ClientProvider.getClient(self.region_id)
-        request = DescribeInvocationResultsRequest()
-        request.set_accept_format('json')
-        request.set_InvokeId(invocation_id)
-        
-        # 直接在方法调用中处理获取结果的逻辑
-        results = self._parse_invocation_results(self._perform_request(client, request))
-        
-        # 使用 next(iter()) 来获取列表中的第一个元素，如果列表为空则返回 None
+        results = self.getInvocationResults(invocation_id=invocation_id)
         return next(iter(results), None)
     
-    def getInvocationResults(self, tags=None, invoke_record_status=None):
+    def getInvocationResults(self, tags=None, invoke_record_status=None, invocation_id=None):
         client = ClientProvider.getClient(self.region_id)
         request = DescribeInvocationResultsRequest()
         request.set_accept_format('json')
@@ -60,6 +53,9 @@ class RunCommandHelper:
         
         if invoke_record_status is not None:
             request.set_InvokeRecordStatus(invoke_record_status)
+
+        if invocation_id is not None:
+            request.set_InvokeId(invocation_id)
 
         # 初始化分页数和结果存储变量
         page_number = 1
@@ -92,7 +88,7 @@ class RunCommandHelper:
         # 返回所有结果
         return all_results
 
-    def asyncRun(self, instance_id, cmd_content, timeout, name=None, tags=None):
+    def run(self, instance_id, cmd_content, timeout, name=None, tags=None):
         client = ClientProvider.getClient(self.region_id)
         request = RunCommandRequest()
         request.set_accept_format('json')
@@ -109,21 +105,42 @@ class RunCommandHelper:
         if name is not None:
             request.set_Name(name)
 
-        response = self._perform_request(client, request)
-        return json.loads(response).get("InvokeId")
+        api_response = self._perform_request(client, request)
 
-    def syncRun(self, instance_id, cmd_content, timeout, name=None, tags=None):
-        invoke_id = self.asyncRun(instance_id=instance_id, 
-                                  name=name, 
-                                  cmd_content=cmd_content,
-                                  tags=tags,
-                                  timeout=timeout)
-        while True:
-            result = self.getInvocationResult(invoke_id)
-            if result.invoke_record_status == "Finished":
-                break
+        return api_response.get("InvokeId")
+
+    def runAndWaitForCompletion(self, instance_id, cmd_content, timeout, name=None, tags=None):
+        try:
+            invoke_id = self.run(instance_id=instance_id, 
+                                      name=name, 
+                                      cmd_content=cmd_content,
+                                      tags=tags,
+                                      timeout=timeout)
+        except Exception as e:
+            logging.error(f"Failed to start asyncRun: {e}")
+            return None
+
+        start_time = time.time()
+        MAX_WAIT_SECONDS = timeout  # 最大等待时间
+
+        while time.time() - start_time < MAX_WAIT_SECONDS:
+            try:
+                result = self.getInvocationResult(invoke_id)
+                if result.invoke_record_status == "Finished":
+                    logging.info(f"Command execution finished: {invoke_id}")
+                    return result
+                elif result.invoke_record_status in ["Failed", "Error"]:
+                    logging.error(f"Command execution failed: {invoke_id}")
+                    return result
+            except Exception as e:
+                logging.error(f"Error getting invocation result: {e}")
+                return None
+
             time.sleep(SECONDS_INTERVAL)
-        return result
+
+        logging.error(f"Command execution timed out after {MAX_WAIT_SECONDS} seconds.")
+        return None
+
 
     def _perform_request(self, client, request):
         """Perform a request using provided client and request objects."""

@@ -79,22 +79,23 @@ class ECSInstance:
         instance.region_id = data.get("RegionId", "")
         instance.credit_specification = data.get("CreditSpecification", "")
         return instance
-
-    def syncRun(self, cmd_content, name=None, timeout=600, tags=None):
-        return RunCommandHelper(self.region_id).syncRun(
-            instance_id=self.instance_id, 
-            cmd_content=cmd_content, 
-            name=name, 
-            tags=tags,
-            timeout=timeout)
     
-    def asyncRun(self, cmd_content, name=None,timeout=600, tags=None):
-        return RunCommandHelper(self.region_id).asyncRun(
+    def run(self, cmd_content, name=None, timeout=600, tags=None):
+        return RunCommandHelper(self.region_id).run(
             instance_id=self.instance_id, 
             cmd_content=cmd_content, 
             name=name,
             tags=tags,
             timeout=timeout)
+    
+    def runAndWaitForCompletion(self, cmd_content, name=None, timeout=600, tags=None):
+        return RunCommandHelper(self.region_id).runAndWaitForCompletion(
+            instance_id=self.instance_id, 
+            cmd_content=cmd_content, 
+            name=name, 
+            tags=tags,
+            timeout=timeout)
+
 
     def attachNewDisk(self, disk_size, disk_category, performance_level=None, delete_with_instance=True):
         client = ClientProvider.getClient(self.region_id)
