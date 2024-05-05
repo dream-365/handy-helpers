@@ -4,6 +4,7 @@ from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerExcept
 from aliyunsdkecs.request.v20140526.DeleteInstancesRequest import DeleteInstancesRequest
 from aliyunsdkecs.request.v20140526.CreateDiskRequest import CreateDiskRequest
 from aliyunsdkecs.request.v20140526.AttachDiskRequest import AttachDiskRequest
+from aliyunsdkecs.request.v20140526.RebootInstanceRequest import RebootInstanceRequest
 import json
 
 class ECSInstance:
@@ -132,6 +133,15 @@ class ECSInstance:
         except ClientException as e:
             print("Attach Disk Failed:", e)
     
+    def reboot(self, force_stop=False):
+        client = ClientProvider.getClient(self.region_id)
+        reboot_instance_request = RebootInstanceRequest()
+        reboot_instance_request.set_InstanceId(self.instance_id)
+        reboot_instance_request.set_ForceStop(force_stop)
+        client.do_action_with_exception(reboot_instance_request)
+
+        pass
+
     def release(self):
         client = ClientProvider.getClient(self.region_id)
         delete_instance_request = DeleteInstancesRequest()
