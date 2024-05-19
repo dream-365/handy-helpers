@@ -12,5 +12,6 @@ setup(
         'numpy>=1.19.5',
         'aliyun-python-sdk-core>=2.13.18',
         'aliyun-python-sdk-ecs>=4.23.0',
+        'aliyun-python-sdk-alidns',
     ],
 )
