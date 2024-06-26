@@ -9,4 +9,5 @@ registry.openanolis.cn/openanolis/mysql:8.0.30-8.6
 # 运行
 docker run --name prod-mysql \
 -v /data/mysql:/var/lib/mysql \
+-p 3306:3306 \
 -d registry.openanolis.cn/openanolis/mysql:8.0.30-8.6
