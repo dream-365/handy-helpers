@@ -1,6 +1,6 @@
 class RunECSInstanceSettings:
     def __init__(self, image_id=None, instance_type=None, system_disk_size=None, system_disk_category=None, system_disk_performance_level=None,
-                 security_group_id=None, vswitch_id=None, host_name=None, password=None, biz_tags=None, spot_strategy=None):
+                 security_group_id=None, vswitch_id=None, host_name=None, password=None, keypair_name=None, biz_tags=None, spot_strategy=None):
         self.image_id = image_id
         self.instance_type = instance_type
         self.system_disk_size = system_disk_size
@@ -12,6 +12,7 @@ class RunECSInstanceSettings:
         self.password = password
         self.biz_tags = biz_tags
         self.spot_strategy = spot_strategy
+        self.keypair_name = keypair_name
 
     def set_image_id(self, image_id):
         self.image_id = image_id
@@ -39,6 +40,9 @@ class RunECSInstanceSettings:
 
     def set_password(self, password):
         self.password = password
+
+    def set_keypair_name(self, keypair_name):
+        self.keypair_name = keypair_name
 
     def set_biz_tags(self, biz_tags):
         self.biz_tags = biz_tags

@@ -71,9 +71,10 @@ class ECSManager:
         run_instances_request.set_InstanceName(settings.host_name)
         run_instances_request.set_InternetMaxBandwidthOut(100)
         run_instances_request.set_HostName(settings.host_name)
-        run_instances_request.set_Password(settings.password)
         run_instances_request.set_SpotStrategy(settings.spot_strategy)
         run_instances_request.set_Tags(settings.biz_tags)
+        run_instances_request.set_KeyPairName(settings.keypair_name)
+        run_instances_request.set_Password(settings.password)
 
         run_instances_response = client.do_action_with_exception(run_instances_request)
         run_instances_response_json = json.loads(str(run_instances_response, encoding='utf-8'))
